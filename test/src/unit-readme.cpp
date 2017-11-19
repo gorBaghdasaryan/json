@@ -1,11 +1,11 @@
 /*
     __ _____ _____ _____
  __|  |   __|     |   | |  JSON for Modern C++ (test suite)
-|  |  |__   |  |  | | | |  version 2.0.2
+|  |  |__   |  |  | | | |  version 2.1.1
 |_____|_____|_____|_|___|  https://github.com/nlohmann/json
 
 Licensed under the MIT License <http://opensource.org/licenses/MIT>.
-Copyright (c) 2013-2016 Niels Lohmann <http://nlohmann.me>.
+Copyright (c) 2013-2017 Niels Lohmann <http://nlohmann.me>.
 
 Permission is hereby  granted, free of charge, to any  person obtaining a copy
 of this software and associated  documentation files (the "Software"), to deal
@@ -36,6 +36,12 @@ using nlohmann::json;
 #include <list>
 #include <unordered_map>
 #include <unordered_set>
+#include <iostream>
+
+#if defined(_MSC_VER)
+    #pragma warning (push)
+    #pragma warning (disable : 4189) // local variable is initialized but not referenced
+#endif
 
 TEST_CASE("README", "[hide]")
 {
@@ -163,7 +169,7 @@ TEST_CASE("README", "[hide]")
             j.clear();    // the array is empty again
 
             // comparison
-            j == "[\"foo\", 1, true]"_json;  // true
+            bool x = (j == "[\"foo\", 1, true]"_json);  // true
 
             // create an object
             json o;
@@ -208,8 +214,8 @@ TEST_CASE("README", "[hide]")
             // maybe ["two", "three", "four", "one"]
 
             std::multiset<std::string> c_mset {"one", "two", "one", "four"};
-            json j_mset(c_mset); // only one entry for "one" is used
-            // maybe ["one", "two", "four"]
+            json j_mset(c_mset); // both entries for "one" are used
+            // maybe ["one", "two", "one", "four"]
 
             std::unordered_multiset<std::string> c_umset {"one", "two", "one", "four"};
             json j_umset(c_umset); // both entries for "one" are used
@@ -297,3 +303,7 @@ TEST_CASE("README", "[hide]")
         std::cout.rdbuf(old_cout_buffer);
     }
 }
+
+#if defined(_MSC_VER)
+    #pragma warning (pop)
+#endif

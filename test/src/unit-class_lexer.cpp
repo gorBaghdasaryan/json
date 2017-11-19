@@ -1,11 +1,11 @@
 /*
     __ _____ _____ _____
  __|  |   __|     |   | |  JSON for Modern C++ (test suite)
-|  |  |__   |  |  | | | |  version 2.0.2
+|  |  |__   |  |  | | | |  version 2.1.1
 |_____|_____|_____|_|___|  https://github.com/nlohmann/json
 
 Licensed under the MIT License <http://opensource.org/licenses/MIT>.
-Copyright (c) 2013-2016 Niels Lohmann <http://nlohmann.me>.
+Copyright (c) 2013-2017 Niels Lohmann <http://nlohmann.me>.
 
 Permission is hereby  granted, free of charge, to any  person obtaining a copy
 of this software and associated  documentation files (the "Software"), to deal
@@ -32,75 +32,94 @@ SOFTWARE.
 #include "json.hpp"
 using nlohmann::json;
 
+// shortcut to scan a string literal
+json::lexer::token_type scan_string(const char* s);
+json::lexer::token_type scan_string(const char* s)
+{
+    return json::lexer(nlohmann::detail::input_adapter(s)).scan();
+}
+
 TEST_CASE("lexer class")
 {
     SECTION("scan")
     {
         SECTION("structural characters")
         {
-            CHECK(json::lexer("[").scan() == json::lexer::token_type::begin_array);
-            CHECK(json::lexer("]").scan() == json::lexer::token_type::end_array);
-            CHECK(json::lexer("{").scan() == json::lexer::token_type::begin_object);
-            CHECK(json::lexer("}").scan() == json::lexer::token_type::end_object);
-            CHECK(json::lexer(",").scan() == json::lexer::token_type::value_separator);
-            CHECK(json::lexer(":").scan() == json::lexer::token_type::name_separator);
+            CHECK((scan_string("[") == json::lexer::token_type::begin_array));
+            CHECK((scan_string("]") == json::lexer::token_type::end_array));
+            CHECK((scan_string("{") == json::lexer::token_type::begin_object));
+            CHECK((scan_string("}") == json::lexer::token_type::end_object));
+            CHECK((scan_string(",") == json::lexer::token_type::value_separator));
+            CHECK((scan_string(":") == json::lexer::token_type::name_separator));
         }
 
         SECTION("literal names")
         {
-            CHECK(json::lexer("null").scan() == json::lexer::token_type::literal_null);
-            CHECK(json::lexer("true").scan() == json::lexer::token_type::literal_true);
-            CHECK(json::lexer("false").scan() == json::lexer::token_type::literal_false);
+            CHECK((scan_string("null") == json::lexer::token_type::literal_null));
+            CHECK((scan_string("true") == json::lexer::token_type::literal_true));
+            CHECK((scan_string("false") == json::lexer::token_type::literal_false));
         }
 
         SECTION("numbers")
         {
-            CHECK(json::lexer("0").scan() == json::lexer::token_type::value_number);
-            CHECK(json::lexer("1").scan() == json::lexer::token_type::value_number);
-            CHECK(json::lexer("2").scan() == json::lexer::token_type::value_number);
-            CHECK(json::lexer("3").scan() == json::lexer::token_type::value_number);
-            CHECK(json::lexer("4").scan() == json::lexer::token_type::value_number);
-            CHECK(json::lexer("5").scan() == json::lexer::token_type::value_number);
-            CHECK(json::lexer("6").scan() == json::lexer::token_type::value_number);
-            CHECK(json::lexer("7").scan() == json::lexer::token_type::value_number);
-            CHECK(json::lexer("8").scan() == json::lexer::token_type::value_number);
-            CHECK(json::lexer("9").scan() == json::lexer::token_type::value_number);
+            CHECK((scan_string("0") == json::lexer::token_type::value_unsigned));
+            CHECK((scan_string("1") == json::lexer::token_type::value_unsigned));
+            CHECK((scan_string("2") == json::lexer::token_type::value_unsigned));
+            CHECK((scan_string("3") == json::lexer::token_type::value_unsigned));
+            CHECK((scan_string("4") == json::lexer::token_type::value_unsigned));
+            CHECK((scan_string("5") == json::lexer::token_type::value_unsigned));
+            CHECK((scan_string("6") == json::lexer::token_type::value_unsigned));
+            CHECK((scan_string("7") == json::lexer::token_type::value_unsigned));
+            CHECK((scan_string("8") == json::lexer::token_type::value_unsigned));
+            CHECK((scan_string("9") == json::lexer::token_type::value_unsigned));
+
+            CHECK((scan_string("-0") == json::lexer::token_type::value_integer));
+            CHECK((scan_string("-1") == json::lexer::token_type::value_integer));
+
+            CHECK((scan_string("1.1") == json::lexer::token_type::value_float));
+            CHECK((scan_string("-1.1") == json::lexer::token_type::value_float));
+            CHECK((scan_string("1E10") == json::lexer::token_type::value_float));
         }
 
         SECTION("whitespace")
         {
             // result is end_of_input, because not token is following
-            CHECK(json::lexer(" ").scan() == json::lexer::token_type::end_of_input);
-            CHECK(json::lexer("\t").scan() == json::lexer::token_type::end_of_input);
-            CHECK(json::lexer("\n").scan() == json::lexer::token_type::end_of_input);
-            CHECK(json::lexer("\r").scan() == json::lexer::token_type::end_of_input);
-            CHECK(json::lexer(" \t\n\r\n\t ").scan() == json::lexer::token_type::end_of_input);
+            CHECK((scan_string(" ") == json::lexer::token_type::end_of_input));
+            CHECK((scan_string("\t") == json::lexer::token_type::end_of_input));
+            CHECK((scan_string("\n") == json::lexer::token_type::end_of_input));
+            CHECK((scan_string("\r") == json::lexer::token_type::end_of_input));
+            CHECK((scan_string(" \t\n\r\n\t ") == json::lexer::token_type::end_of_input));
         }
     }
 
     SECTION("token_type_name")
     {
-        CHECK(json::lexer::token_type_name(json::lexer::token_type::uninitialized) == "<uninitialized>");
-        CHECK(json::lexer::token_type_name(json::lexer::token_type::literal_true) == "true literal");
-        CHECK(json::lexer::token_type_name(json::lexer::token_type::literal_false) == "false literal");
-        CHECK(json::lexer::token_type_name(json::lexer::token_type::literal_null) == "null literal");
-        CHECK(json::lexer::token_type_name(json::lexer::token_type::value_string) == "string literal");
-        CHECK(json::lexer::token_type_name(json::lexer::token_type::value_number) == "number literal");
-        CHECK(json::lexer::token_type_name(json::lexer::token_type::begin_array) == "'['");
-        CHECK(json::lexer::token_type_name(json::lexer::token_type::begin_object) == "'{'");
-        CHECK(json::lexer::token_type_name(json::lexer::token_type::end_array) == "']'");
-        CHECK(json::lexer::token_type_name(json::lexer::token_type::end_object) == "'}'");
-        CHECK(json::lexer::token_type_name(json::lexer::token_type::name_separator) == "':'");
-        CHECK(json::lexer::token_type_name(json::lexer::token_type::value_separator) == "','");
-        CHECK(json::lexer::token_type_name(json::lexer::token_type::parse_error) == "<parse error>");
-        CHECK(json::lexer::token_type_name(json::lexer::token_type::end_of_input) == "end of input");
+        CHECK((std::string(json::lexer::token_type_name(json::lexer::token_type::uninitialized)) == "<uninitialized>"));
+        CHECK((std::string(json::lexer::token_type_name(json::lexer::token_type::literal_true)) == "true literal"));
+        CHECK((std::string(json::lexer::token_type_name(json::lexer::token_type::literal_false)) == "false literal"));
+        CHECK((std::string(json::lexer::token_type_name(json::lexer::token_type::literal_null)) == "null literal"));
+        CHECK((std::string(json::lexer::token_type_name(json::lexer::token_type::value_string)) == "string literal"));
+        CHECK((std::string(json::lexer::token_type_name(json::lexer::token_type::value_unsigned)) == "number literal"));
+        CHECK((std::string(json::lexer::token_type_name(json::lexer::token_type::value_integer)) == "number literal"));
+        CHECK((std::string(json::lexer::token_type_name(json::lexer::token_type::value_float)) == "number literal"));
+        CHECK((std::string(json::lexer::token_type_name(json::lexer::token_type::begin_array)) == "'['"));
+        CHECK((std::string(json::lexer::token_type_name(json::lexer::token_type::begin_object)) == "'{'"));
+        CHECK((std::string(json::lexer::token_type_name(json::lexer::token_type::end_array)) == "']'"));
+        CHECK((std::string(json::lexer::token_type_name(json::lexer::token_type::end_object)) == "'}'"));
+        CHECK((std::string(json::lexer::token_type_name(json::lexer::token_type::name_separator)) == "':'"));
+        CHECK((std::string(json::lexer::token_type_name(json::lexer::token_type::value_separator)) == "','"));
+        CHECK((std::string(json::lexer::token_type_name(json::lexer::token_type::parse_error)) == "<parse error>"));
+        CHECK((std::string(json::lexer::token_type_name(json::lexer::token_type::end_of_input)) == "end of input"));
     }
 
     SECTION("parse errors on first character")
     {
         for (int c = 1; c < 128; ++c)
         {
-            auto s = std::string(1, c);
+            // create string from the ASCII code
+            const auto s = std::string(1, static_cast<char>(c));
+            // store scan() result
+            const auto res = scan_string(s.c_str());
 
             switch (c)
             {
@@ -122,7 +141,7 @@ TEST_CASE("lexer class")
                 case ('8'):
                 case ('9'):
                 {
-                    CHECK(json::lexer(s.c_str()).scan() != json::lexer::token_type::parse_error);
+                    CHECK((res != json::lexer::token_type::parse_error));
                     break;
                 }
 
@@ -132,24 +151,37 @@ TEST_CASE("lexer class")
                 case ('\n'):
                 case ('\r'):
                 {
-                    CHECK(json::lexer(s.c_str()).scan() == json::lexer::token_type::end_of_input);
+                    CHECK((res == json::lexer::token_type::end_of_input));
                     break;
                 }
 
                 // anything else is not expected
                 default:
                 {
-                    CHECK(json::lexer(s.c_str()).scan() == json::lexer::token_type::parse_error);
+                    CHECK((res == json::lexer::token_type::parse_error));
                     break;
                 }
             }
         }
     }
 
+    SECTION("very large string")
+    {
+        // strings larger than 1024 bytes yield a resize of the lexer's yytext buffer
+        std::string s("\"");
+        s += std::string(2048, 'x');
+        s += "\"";
+        CHECK((scan_string(s.c_str()) == json::lexer::token_type::value_string));
+    }
+
+    /* NOTE: to_unicode function has been removed
     SECTION("to_unicode")
     {
-        CHECK(json::lexer::to_unicode(0x1F4A9) == "💩");
-        CHECK_THROWS_AS(json::lexer::to_unicode(0x200000), std::out_of_range);
-        CHECK_THROWS_WITH(json::lexer::to_unicode(0x200000), "code points above 0x10FFFF are invalid");
+        // lexer to call to_unicode on
+        json::lexer dummy_lexer("", 0);
+        CHECK(dummy_lexer.to_unicode(0x1F4A9) == "💩");
+        CHECK_THROWS_AS(dummy_lexer.to_unicode(0x200000), json::parse_error);
+        CHECK_THROWS_WITH(dummy_lexer.to_unicode(0x200000), "[json.exception.parse_error.103] parse error: code points above 0x10FFFF are invalid");
     }
+    */
 }
